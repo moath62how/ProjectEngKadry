@@ -10,12 +10,12 @@ import re
 URL = "https://data.eea.org.eg/lastpaid.aspx"
 
 
-def get_engineer_syndicate(national_id: str) -> str:
+def get_engineer_syndicate(national_id: str) -> dict:
     """
-    Fetches the engineer sub-syndicate (النقابة الفرعية) using the Egyptian National ID.
+    Fetches the engineer sub-syndicate (النقابة الفرعية) and name using the Egyptian National ID.
     
     :param national_id: 14-digit Egyptian national number
-    :return: Sub-syndicate name (string)
+    :return: Dictionary with 'syndicate' and 'name' keys
     :raises ValueError: if input validation fails
     :raises Exception: if request fails or data not found
     """
@@ -71,7 +71,13 @@ def get_engineer_syndicate(national_id: str) -> str:
     if not synd or not synd.get("value"):
         raise Exception("No data found for this national number.")
 
-    return synd["value"].strip()
+    name = soup.find("input", {"id": "txtName"})
+    name_value = name["value"].strip() if name and name.get("value") else ""
+
+    return {
+        "syndicate": synd["value"].strip(),
+        "name": name_value
+    }
 
 
 def get_engineer_syndicate_safe(national_id: str) -> dict:
@@ -79,14 +85,15 @@ def get_engineer_syndicate_safe(national_id: str) -> dict:
     Safe wrapper around get_engineer_syndicate that returns a dict with status.
     
     :param national_id: 14-digit Egyptian national number
-    :return: Dictionary with 'success', 'data', and optionally 'error' keys
+    :return: Dictionary with 'success', 'national_id', 'syndicate', 'name', and optionally 'error' keys
     """
     try:
-        syndicate = get_engineer_syndicate(national_id)
+        data = get_engineer_syndicate(national_id)
         return {
             "success": True,
             "national_id": national_id,
-            "syndicate": syndicate
+            "syndicate": data["syndicate"],
+            "name": data["name"]
         }
     except ValueError as e:
         return {

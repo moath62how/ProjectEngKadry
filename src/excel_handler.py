@@ -115,14 +115,16 @@ def write_results_to_excel(results: List[Dict], output_path: str):
 
 def append_syndicate_to_excel(file_path: str, output_path: str = None,
                                id_column: Optional[str] = None,
-                               syndicate_column: str = "Syndicate"):
+                               syndicate_column: str = "Syndicate",
+                               name_column: str = "Name"):
     """
-    Read an Excel file with national IDs, look up syndicates, and write results.
+    Read an Excel file with national IDs, look up syndicates and names, and write results.
     
     :param file_path: Input Excel file path
     :param output_path: Output Excel file path (if None, overwrites input)
     :param id_column: Column name for national IDs
     :param syndicate_column: Column name for syndicate results
+    :param name_column: Column name for name results
     :return: Path to the output file
     """
     from .scraper import get_engineer_syndicate_safe
@@ -138,14 +140,17 @@ def append_syndicate_to_excel(file_path: str, output_path: str = None,
         raise ValueError(f"Could not find National ID column in file. Columns: {', '.join(df.columns)}")
 
     # Process each national ID
-    results = []
+    syndicates = []
+    names = []
     for national_id in df[id_col].dropna().astype(str):
         clean_id = _clean_id_value(national_id)
         result = get_engineer_syndicate_safe(clean_id)
-        results.append(result.get('syndicate', result.get('error', 'Error')))
+        syndicates.append(result.get('syndicate', result.get('error', 'Error')))
+        names.append(result.get('name', ''))
 
     # Add results to dataframe
-    df[syndicate_column] = results
+    df[name_column] = names
+    df[syndicate_column] = syndicates
 
     # Write to Excel
     df.to_excel(output_path, index=False, engine='openpyxl')
